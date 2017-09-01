@@ -13,6 +13,8 @@ app.on('ready', function() {
   mainWindow.on('closed', function() {
     mainWindow = null;
   });
+
+  mainWindow.webContents.openDevTools();
 });
 
 app.on('window-all-closed', function() {

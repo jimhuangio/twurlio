@@ -47,7 +47,8 @@
   },
   "dependencies": {
     "electron-compile": "^6.4.1",
-    "electron-oauth-twitter": "^1.1.0"
+    "electron-oauth-twitter": "^1.1.0",
+    "fast-csv": "^2.4.0"
   },
   "devDependencies": {
     "babel-plugin-transform-async-to-generator": "^6.24.1",

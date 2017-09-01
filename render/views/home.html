@@ -1,9 +1,8 @@
-<div ng-show="$ctrl.loggedIn === true" class="container text-center">
+<div class="container text-center">
   <div class="row margin-lg">
     <h3 class="m0">Twitter miner</h3>
   </div>
 </div>
-
 <div ng-show="$ctrl.loggedIn === false" class="container text-center">
   <div class="row margin-lg">
     <div class="col-lg-12">
@@ -16,23 +15,26 @@
     </div>
   </div>
 </div>
-
 <div ng-show="$ctrl.loggedIn === true" class="container text-center">
-  <div class="row margin-lg">
-    <p class="m0">{{$ctrl.username}}</p>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="m0">{{$ctrl.username}}</p>
+    </div>
   </div>
   <div class="row margin-lg">
     <div class="col-lg-12">
       <div class="input-group">
         <input type="text" class="form-control" placeholder="Enter user name" ng-model="$ctrl.screenName">
         <span class="input-group-btn">
-          <button ng-click="$ctrl.run()" class="btn btn-primary" type="button">Search</button>
+          <button ng-click="$ctrl.run()" ng-disabled="$ctrl.searchEnabled === false" class="btn btn-labeled btn-primary">
+            <span class="btn-label"><i class="fa fa-search"></i>
+            </span>Search
+          </button>
         </span>
       </div>
     </div>
   </div>
 </div>
-
 <div ng-if="$ctrl.loading === true" class="container text-center">
   <div class="row margin-lg">
     <div class="col-lg-12">
@@ -40,31 +42,72 @@
     </div>
   </div>
 </div>
-
-<div ng-show="$ctrl.followers.length > 0" class="container">
+<div ng-show="$ctrl.totalRequests > 0" class="container">
   <div class="row margin-lg">
-    <div class="col-lg-6 text-left">
-      <p>Received {{$ctrl.followers.length}} from {{$ctrl.userIDs.length}} followers</p>
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6">
+      <h4>Followers IDs</h4>
+      <table class="table table-striped table-hover" ts-wrapper>
+        <thead>
+          <tr>
+            <th>Received</th>
+            <th>Discarded</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{$ctrl.followersIDsReceived}}</td>
+            <td>{{$ctrl.followersIDsDiscarded}}</td>
+            <td>{{$ctrl.targetUser.followers_count}}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <div class="col-lg-6 text-right">
-      <button class="btn btn-primary fa fa-download" uib-tooltip="Export" type="button" ng-csv="$ctrl.followers" csv-header="$ctrl.headersDescription" filename="twitter-miner.csv"></button>
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6">
+      <h4>Followers Details</h4>
+      <table class="table table-striped table-hover" ts-wrapper>
+        <thead>
+          <tr>
+            <th>Received</th>
+            <th>Discarded</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{$ctrl.followersDetailsReceived}}</td>
+            <td>{{$ctrl.followersDetailsDiscarded}}</td>
+            <td>{{$ctrl.targetUser.followers_count}}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
-
   <div class="row margin-lg">
     <div class="col-lg-12">
       <uib-progressbar value="$ctrl.requestsCount" max="$ctrl.totalRequests">
-        <span>{{$ctrl.followers.length}} / {{$ctrl.userIDs.length}}</span>
+        <span>{{$ctrl.progressBarLeftText}} / {{$ctrl.progressBarRightText}}</span>
       </uib-progressbar>
+      <p class="text-center"><strong>{{$ctrl.status}}</strong></p>
     </div>
   </div>
+</div>
 
+<div ng-if="$ctrl.remainingClockTime !== 0" class="container text-center">
   <div class="row margin-lg">
-    <div class="col-lg-6">
+    <p>Rate limit exceeded</p>
+    <p>Time remaining:</p>
+    <h3 class="m0">{{$ctrl.remainingClockTime | timeFormat}}</h3>
+  </div>
+</div>
+
+<div ng-show="$ctrl.followers.length > 0" class="container">
+  <div class="row margin-lg text-center">
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 col-lg-offset-2 col-md-offset-2 col-sm-offset-2 col-xs-offset-2">
       <p><strong>Page</strong></p>
       <ul class="pagination-sm margin-none" direction-links="true" uib-pagination max-size="4" total-items="$ctrl.followers.length" items-per-page="$ctrl.pageSize" ng-model="$ctrl.currentPage" ng-change="$ctrl.pageChanged()"></ul>
     </div>
-    <div class="col-lg-6">
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
       <p><strong>Items per page</strong></p>
       <select class="form-control" ng-model="$ctrl.pageSize" ng-options="item for item in $ctrl.pagesSelectOptions"></select>
     </div>

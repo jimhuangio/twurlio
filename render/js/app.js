@@ -5,8 +5,7 @@ var App = angular.module('twitterminer', [
   'ngCookies',
   'ui.bootstrap',
   'ngSanitize',
-  'ngResource',
-  'ngCsv'
+  'ngResource'
 ]);
 
 App.config(['$compileProvider', function ($compileProvider) {
