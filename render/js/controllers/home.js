@@ -1,4 +1,4 @@
-angular.module('twitterminer').controller('HomeCtrl', function ($timeout, $interval, $uibModal, twitterService) {
+angular.module('twitterminer').controller('HomeCtrl', function ($scope, $timeout, $interval, $uibModal, applicationService, twitterService) {
     'use strict';
 
     var API_RATE_LIMIT = 903000;
@@ -15,112 +15,147 @@ angular.module('twitterminer').controller('HomeCtrl', function ($timeout, $inter
 
     var init = function() {
       vm.screenName = '';
+      vm.importedUsers = [];
 
       vm.loading = true;
 
       vm.pageSize = 10;
       vm.currentPage = 1;
-      vm.pagesSelectOptions = [10, 20, 50, 100];
+      vm.pagesSelectOptions = [10, 20, 50, 100, 500];
 
       vm.remainingClockTime = 0;
 
       vm.headersDescription = ['Username', 'Screen name', 'URL'];
       vm.headersName = ['name', 'screen_name', 'url'];
 
-      twitterService.verifyCredentials().then(
-        function(credentials) {
-          if(credentials.errors === undefined) {
-            vm.loggedIn = true;
-            vm.username = credentials.name;
+      vm.followers = [];
 
-            twitterService.checkPending().then(
-              function(data) {
-                if(data.status.screenName !== null) {
-                  var modalInstance = $uibModal.open({
-                    animation: true,
-                    templateUrl: 'views/resume-modal.html',
-                    controller: 'ModalResumeCtrl',
-                    controllerAs: '$ctrl',
-                    size: 'md',
-                    resolve: {
-                      screenName: function() {
-                        return data.status.screenName;
-                      }
-                    }
-                  });
+      applicationService.checkKeys().then(
+        function(keys) {
+          if(keys.error !== 'NO_KEYS') {
+            twitterService.verifyCredentials().then(
+              function(credentials) {
+                if(credentials.errors === undefined) {
+                  vm.loggedIn = true;
+                  vm.username = credentials.name;
 
-                  modalInstance.result.then(function (result) {
-                    if(result === true) {
-                      vm.screenName = data.status.screenName;
-
-                      vm.followers = [];
-
-                      vm.followersIDsReceived = 0;
-                      vm.followersIDsDiscarded = '';
-
-                      vm.followersDetailsReceived = 0;
-                      vm.followersDetailsDiscarded = '';
-
-                      vm.searchEnabled = false;
-
-                      twitterService.userLookup({screenName: vm.screenName}).then(
-                        function(user) {
-                          var rateExceeded;
-                          vm.userIDs = data.userIDs;
-
-                          if(data.status.followersCursor !== null) {
-                            vm.status = 'Getting followers IDs ..';
-                            rateExceeded = checkRateLimit(user, vm.run);
-                            if(rateExceeded === false) {
-                              vm.targetUser = user[0];
-                              vm.requestsCount = data.userIDs.length/FOLLOWERS_IDS_PAGE_SIZE;
-                              vm.totalRequests = Math.ceil(vm.targetUser.followers_count/FOLLOWERS_IDS_PAGE_SIZE);
-                              vm.progressBarRightText = vm.targetUser.followers_count;
-
-                              followersCursor = data.status.followersCursor;
-
-                              vm.followersIDsReceived += data.userIDs.length;
-                              vm.progressBarLeftText = data.userIDs.length;
-
-                              getFollowers();
-                            }
-                          } else if(data.status.lookupPage !== null) {
-                            vm.status = 'Getting followers details ..';
-                            rateExceeded = checkRateLimit(user, userLookup);
-                            if(rateExceeded === false) {
-                              vm.targetUser = user[0];
-                              vm.followers = [];
-
-                              currentUserDetailsPage = data.status.lookupPage;
-
-                              vm.followersDetailsReceived = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
-                              vm.progressBarLeftText = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
-                              vm.progressBarRightText = vm.targetUser.followers_count;
-
-                              vm.requestsCount = currentUserDetailsPage;
-                              vm.totalRequests = Math.ceil(vm.targetUser.followers_count/FOLLOWERS_DETAILS_PAGE_SIZE);
-
-                              vm.followers = data.userLookupData;
-
-                              userLookup();
+                  applicationService.checkPending().then(
+                    function(data) {
+                      if(data.status.screenName !== null) {
+                        var resumeModal = $uibModal.open({
+                          animation: true,
+                          templateUrl: 'views/modals/resume.html',
+                          controller: 'ModalResumeCtrl',
+                          controllerAs: '$ctrl',
+                          size: 'md',
+                          resolve: {
+                            screenName: function() {
+                              return data.status.screenName;
                             }
                           }
+                        });
 
-                          vm.loading = false;
-                        }
-                      );
+                        resumeModal.result.then(function (result) {
+                          if(result === true) {
+                            vm.screenName = data.status.screenName;
+
+                            vm.followersDetailsRequested = 0;
+                            vm.followersDetailsReceived = 0;
+                            vm.followersDetailsDiscarded = 0;
+
+                            vm.searchEnabled = false;
+
+                            twitterService.userLookup({screenName: vm.screenName}).then(
+                              function(user) {
+                                vm.userIDs = data.userIDs;
+
+                                if(data.status.followersCursor !== null) {
+                                  vm.status = 'Getting followers IDs ..';
+                                  // rateExceeded = checkRateLimit(user, vm.run);
+                                  // if(rateExceeded === false) {
+                                  vm.targetUser = user[0];
+                                  vm.requestsCount = data.userIDs.length/FOLLOWERS_IDS_PAGE_SIZE;
+                                  vm.totalRequests = Math.ceil(vm.targetUser.followers_count/FOLLOWERS_IDS_PAGE_SIZE);
+                                  vm.progressBarRightText = vm.targetUser.followers_count;
+
+                                  vm.followersIDsRequested = data.userIDs.length;
+                                  vm.followersIDsReceived = data.userIDs.length;
+                                  vm.followersIDsDiscarded = vm.followersIDsRequested-vm.followersIDsReceived;
+
+                                  followersCursor = data.status.followersCursor;
+
+                                  vm.progressBarLeftText = data.userIDs.length;
+
+                                  getFollowers();
+                                  // }
+                                } else {
+                                  // if(data.status.lookupPage !== null)
+                                  vm.status = 'Getting followers details ..';
+                                  // rateExceeded = checkRateLimit(user, userLookup);
+                                  // if(rateExceeded === false) {
+                                  vm.targetUser = user[0];
+
+                                  currentUserDetailsPage = (data.status.lookupPage === null) ? 0 : data.status.lookupPage;
+
+                                  vm.followersIDsRequested = vm.targetUser.followers_count;
+                                  vm.followersIDsReceived = data.userIDs.length;
+                                  vm.followersIDsDiscarded = vm.followersIDsRequested-vm.followersIDsReceived;
+
+                                  vm.followersDetailsRequested = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
+                                  vm.followersDetailsDiscarded = vm.followersDetailsRequested-data.userLookupData.length;
+                                  vm.followersDetailsReceived = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE - vm.followersDetailsRequested-data.userLookupData.length;
+
+                                  vm.progressBarLeftText = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
+                                  vm.progressBarRightText = vm.targetUser.followers_count;
+
+                                  vm.requestsCount = currentUserDetailsPage;
+                                  vm.totalRequests = Math.ceil(vm.targetUser.followers_count/FOLLOWERS_DETAILS_PAGE_SIZE);
+
+                                  vm.followers = data.userLookupData;
+
+                                  userLookup(vm.followersDetailsRequested);
+                                }
+
+                                vm.loading = false;
+                              }
+                            );
+                          }
+                        }, function () {
+                          // modal dismissed
+                        });
+                      }
                     }
-                  }, function () {
-                    // modal dismissed
-                  });
+                  );
+                } else {
+                  vm.loggedIn = false;
                 }
+
+                vm.loading = false;
               }
             );
           } else {
-            vm.loggedIn = false;
-          }
+            var checkKeysModal = $uibModal.open({
+              animation: true,
+              templateUrl: 'views/modals/application-keys.html',
+              controller: 'ModalApplicationKeysCtrl',
+              controllerAs: '$ctrl',
+              size: 'md'
+            });
 
-          vm.loading = false;
+            checkKeysModal.result.then(function (result) {
+              applicationService.saveKeys(result).then(
+                function() {
+                  init();
+                },
+                function() {
+
+                }
+              );
+            });
+          }
+        },
+        function() {
+
         }
       );
     };
@@ -151,53 +186,59 @@ angular.module('twitterminer').controller('HomeCtrl', function ($timeout, $inter
       }
     };
 
-    var userLookup = function() {
+    var userLookup = function(previousPageSize) {
       var offset = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
       var usersPage = vm.userIDs.slice(offset, offset+FOLLOWERS_DETAILS_PAGE_SIZE);
 
-      twitterService.userLookup({userIDs: usersPage.join(), page: currentUserDetailsPage, screenName: vm.screenName}).then(
-        function(data) {
-          var rateExceeded = checkRateLimit(data, userLookup);
-          if(rateExceeded === false) {
-            angular.forEach(data, function(follower) {
-              var f = {};
+      function updateLookUpValues(requested, received) {
+        vm.followersDetailsRequested += requested;
+        vm.followersDetailsDiscarded += FOLLOWERS_DETAILS_PAGE_SIZE-received;
+        vm.followersDetailsReceived += received;
 
-              f.name = follower.name;
-              f.screen_name = follower.screen_name;
+        vm.progressBarLeftText = vm.followersDetailsRequested;
 
-              if(follower.entities && follower.entities.url) {
-                f.url = follower.entities.url.urls["0"].expanded_url;
-              }
+        currentUserDetailsPage++;
+        vm.requestsCount++;
+      }
 
-              vm.followers.push(f);
-            });
+      if(usersPage.length !== 0) {
+        twitterService.userLookup({userIDs: usersPage.join(), page: currentUserDetailsPage, screenName: vm.screenName}).then(
+          function(data) {
+            var rateExceeded = checkRateLimit(data, userLookup);
+            if(rateExceeded === false) {
+              angular.forEach(data, function(follower) {
+                var f = {};
 
-            vm.followersDetailsReceived = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
-            vm.progressBarLeftText = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
+                f.name = follower.name;
+                f.screen_name = follower.screen_name;
 
-            currentUserDetailsPage++;
-            vm.requestsCount++;
-            vm.loading = false;
-
-            if(usersPage.length >= FOLLOWERS_DETAILS_PAGE_SIZE) {
-              userLookup();
-            } else {
-              twitterService.doneMining().then(
-                function() {
-                  vm.status = 'Done';
-
-                  vm.searchEnabled = true;
-                  vm.followersDetailsDiscarded = vm.targetUser.followers_count-vm.followersDetailsReceived;
-                },
-                function() {
-                  vm.status = 'Error';
-                  vm.searchEnabled = true;
+                if(follower.entities && follower.entities.url) {
+                  f.url = follower.entities.url.urls["0"].expanded_url;
                 }
-              );
+
+                vm.followers.push(f);
+              });
+
+              updateLookUpValues(previousPageSize, data.length);
+              userLookup(usersPage.length);
             }
           }
-        }
-      );
+        );
+      } else {
+        vm.loading = false;
+
+        updateLookUpValues(previousPageSize, 0);
+
+        applicationService.doneMining().then(
+          function() {
+            nextImportedUser();
+          },
+          function() {
+            vm.status = 'Error';
+            vm.searchEnabled = true;
+          }
+        );
+      }
     };
 
     var getFollowers = function() {
@@ -207,26 +248,38 @@ angular.module('twitterminer').controller('HomeCtrl', function ($timeout, $inter
           if(rateExceeded === false) {
             followersCursor = followers.next_cursor_str;
             vm.userIDs = vm.userIDs.concat(followers.ids);
-            vm.followersIDsReceived += followers.ids.length;
+
             vm.progressBarLeftText = vm.userIDs.length;
+
+            vm.followersIDsRequested += FOLLOWERS_IDS_PAGE_SIZE;
+            vm.followersIDsDiscarded += FOLLOWERS_IDS_PAGE_SIZE-followers.ids.length;
+            vm.followersIDsReceived = (vm.followersIDsRequested - vm.followersIDsDiscarded);
 
             if(followers.next_cursor !== 0) {
               getFollowers();
             } else {
               vm.status = 'Getting followers details ..';
 
-              vm.followersIDsDiscarded = vm.targetUser.followers_count-vm.followersIDsReceived;
-
               vm.requestsCount = 0;
-              vm.totalRequests = Math.ceil(vm.targetUser.followers_count/FOLLOWERS_DETAILS_PAGE_SIZE);
+              vm.totalRequests = Math.ceil(vm.targetUser.followers_count/FOLLOWERS_DETAILS_PAGE_SIZE)+1;
 
-              userLookup(vm.userIDs);
+              userLookup(0, 0);
             }
 
             vm.requestsCount++;
           }
         }
       );
+    };
+
+    var nextImportedUser = function() {
+      if(vm.importedUsers.length !== 0) {
+        vm.screenName = vm.importedUsers.splice(0, 1)[0];
+        vm.run();
+      } else {
+        vm.status = 'Done';
+        vm.searchEnabled = true;
+      }
     };
 
     vm.run = function () {
@@ -236,15 +289,18 @@ angular.module('twitterminer').controller('HomeCtrl', function ($timeout, $inter
       vm.followers = [];
       vm.userIDs = [];
 
+      vm.followersIDsRequested = 0;
       vm.followersIDsReceived = 0;
-      vm.followersIDsDiscarded = '';
+      vm.followersIDsDiscarded = 0;
 
+      vm.followersDetailsRequested = 0;
       vm.followersDetailsReceived = 0;
-      vm.followersDetailsDiscarded = '';
+      vm.followersDetailsDiscarded = 0;
 
       vm.searchEnabled = false;
 
       vm.loading = true;
+
       twitterService.userLookup({screenName: vm.screenName}).then(
         function(user) {
           var rateExceeded = checkRateLimit(user, vm.run);
@@ -283,6 +339,23 @@ angular.module('twitterminer').controller('HomeCtrl', function ($timeout, $inter
               vm.loading = false;
             }
           );
+        }
+      );
+    };
+
+    vm.newFileImport = function(filename) {
+      applicationService.newFileImport().then(
+        function(d) {
+          angular.forEach(d.data, function(target) {
+            if(target !== '') {
+              vm.importedUsers.push(target);
+            }
+          });
+
+          nextImportedUser();
+        },
+        function() {
+
         }
       );
     };

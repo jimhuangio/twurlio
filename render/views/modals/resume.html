@@ -2,7 +2,8 @@
   <h4 class="modal-title" id="modal-title">Resume operation?</h4>
 </div>
 <div class="modal-body" id="modal-body">
-  An unfinished operation for the user <b>{{ $ctrl.screenName }}</b> was found. Would you like to resume it?
+  <p>An unfinished operation for the user <b>{{ $ctrl.screenName }}</b> was found. Would you like to resume it?</p>
+  <b>NOTE: Starting a new process will erase previous saved data.</b>
 </div>
 <div class="modal-footer">
   <button class="btn btn-primary" type="button" ng-click="$ctrl.ok()">OK</button>

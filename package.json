@@ -1,8 +1,8 @@
 {
-  "name": "twitter-miner",
-  "productName": "twitter-miner",
+  "name": "twurlio",
+  "productName": "twurlio",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "Export followers",
   "main": "source/main.js",
   "scripts": {
     "start": "electron-forge start",
@@ -11,7 +11,7 @@
     "lint": "eslint src"
   },
   "keywords": [],
-  "author": "guillermo",
+  "author": "jimhuangio",
   "license": "MIT",
   "config": {
     "forge": {
@@ -31,7 +31,7 @@
         "packageManager": "npm"
       },
       "electronWinstallerConfig": {
-        "name": "twitter_miner"
+        "name": "twurlio"
       },
       "electronInstallerDebian": {},
       "electronInstallerRedhat": {},
@@ -41,7 +41,7 @@
       },
       "windowsStoreConfig": {
         "packageName": "",
-        "name": "twitterminer"
+        "name": "twurlio"
       }
     }
   },

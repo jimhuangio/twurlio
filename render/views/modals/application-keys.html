@@ -1,0 +1,16 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-title">Please enter application keys</h4>
+</div>
+<div class="modal-body" id="modal-body">
+  <div class="row">
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 ">
+      <input type="text" class="form-control" placeholder="Application key" ng-model="$ctrl.result.appKey">
+    </div>
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+      <input type="text" class="form-control" placeholder="Application secret" ng-model="$ctrl.result.appSecret">
+    </div>
+  </div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" type="button" ng-click="$ctrl.ok()">OK</button>
+</div>

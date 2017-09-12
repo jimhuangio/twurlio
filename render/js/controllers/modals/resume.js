@@ -1,17 +1,17 @@
 angular.module('twitterminer').controller('ModalResumeCtrl', function ($uibModalInstance, screenName) {
   'use strict';
 
-  var $ctrl = this;
+  var vm = this;
 
-  $ctrl.$onInit = function () {
-    $ctrl.screenName = screenName;
+  vm.$onInit = function () {
+    vm.screenName = screenName;
   };
 
-  $ctrl.ok = function () {
+  vm.ok = function () {
     $uibModalInstance.close(true);
   };
 
-  $ctrl.cancel = function () {
+  vm.cancel = function () {
     $uibModalInstance.dismiss('cancel');
   };
 });
