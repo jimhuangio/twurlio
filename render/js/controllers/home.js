@@ -229,7 +229,7 @@ angular.module('twitterminer').controller('HomeCtrl', function ($scope, $timeout
 
         updateLookUpValues(previousPageSize, 0);
 
-        applicationService.doneMining().then(
+        applicationService.doneMining(vm.screenName).then(
           function() {
             nextImportedUser();
           },

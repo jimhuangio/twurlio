@@ -2,6 +2,7 @@ const ipc = require('electron').ipcMain;
 const fs = require('fs');
 const csv = require('fast-csv');
 const dialog = require('electron').dialog;
+const constants = require('../constants');
 
 const DONE_MINING = 'DONE_MINING';
 const CHECK_PENDING = 'CHECK_PENDING';
@@ -9,15 +10,10 @@ const CHECK_KEYS = 'CHECK_KEYS';
 const SAVE_KEYS = 'SAVE_KEYS';
 const NEW_FILE_IMPORT = 'NEW_FILE_IMPORT';
 
-const FILES_PATH = './source/';
-const MINING_STATUS_FILENAME = FILES_PATH + 'mining-status.json';
-const FOLLOWERS_IDS_FILENAME = '-followersIDs.json';
-const USER_LOOKUP_FILENAME = '-followers.csv';
-
 ipc.on(CHECK_KEYS, function(ipcEvent, data) {
   let result;
 
-  fs.readFile(FILES_PATH + 'config.json', 'utf8', function(err, result) {
+  fs.readFile(constants.FILES_PATH + 'config.json', 'utf8', function(err, result) {
     let config = JSON.parse(result);
     if(!config.appKey || !config.appSecret) {
       config.error = "NO_KEYS";
@@ -29,7 +25,7 @@ ipc.on(CHECK_KEYS, function(ipcEvent, data) {
 
 ipc.on(SAVE_KEYS, function(ipcEvent, keys) {
   let data = {appKey: keys.appKey, appSecret: keys.appSecret, accessToken:"", accessTokenSecret:""};
-  fs.writeFile(FILES_PATH + 'config.json', JSON.stringify(data), 'utf8', function (err) {
+  fs.writeFile(constants.FILES_PATH + 'config.json', JSON.stringify(data), 'utf8', function (err) {
     let result = {status: 0};
     if(err) {
       result.status = -1;
@@ -40,35 +36,41 @@ ipc.on(SAVE_KEYS, function(ipcEvent, keys) {
 });
 
 ipc.on(DONE_MINING, function(ipcEvent, d) {
+  let result = {status: 0};
   let data = {screenName: null, followersCursor: null, lookupPage: null};
-  fs.writeFile(MINING_STATUS_FILENAME, JSON.stringify(data), 'utf8', function (err) {
-    let result = {status: 0};
+  fs.writeFile(constants.FILES_PATH + constants.MINING_STATUS_FILENAME, JSON.stringify(data), 'utf8', function (err) {
     if(err) {
       result.status = -1;
     }
 
-    ipcEvent.sender.send(DONE_MINING, result);
+    fs.unlink(constants.FILES_PATH + d.screenName + constants.FOLLOWERS_IDS_FILENAME, function() {
+      if(err) {
+        result.status = -1;
+      }
+
+      ipcEvent.sender.send(DONE_MINING, result);
+    });
   });
 });
 
 ipc.on(CHECK_PENDING, function(ipcEvent, d) {
-  fs.readFile(MINING_STATUS_FILENAME, 'utf8', function(err, status) {
+  fs.readFile(constants.FILES_PATH + constants.MINING_STATUS_FILENAME, 'utf8', function(err, status) {
     if (err) {
       throw err;
     } else {
       let result = {status: JSON.parse(status)};
 
       if(result.status.followersCursor !== null || result.status.lookupPage !== null) {
-        let followersFileName = FILES_PATH + result.status.screenName + FOLLOWERS_IDS_FILENAME;
+        let followersFileName = constants.FILES_PATH + result.status.screenName + constants.FOLLOWERS_IDS_FILENAME;
 
         // Read followers IDs file
         fs.readFile(followersFileName, 'utf8', function(err, userIDs) {
           result.userIDs = JSON.parse(userIDs);
 
-          if(fs.existsSync(FILES_PATH + result.status.screenName + USER_LOOKUP_FILENAME)) {
+          if(fs.existsSync(constants.FILES_PATH + result.status.screenName + constants.USER_LOOKUP_FILENAME)) {
             let userLookupData = [];
             // Read followers details file
-            csv.fromPath(FILES_PATH + result.status.screenName + USER_LOOKUP_FILENAME)
+            csv.fromPath(constants.FILES_PATH + result.status.screenName + constants.USER_LOOKUP_FILENAME)
             .on('data', function(data) {
               let f = {};
 

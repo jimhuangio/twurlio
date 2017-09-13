@@ -1,0 +1,6 @@
+{
+  "FILES_PATH": "./",
+  "MINING_STATUS_FILENAME": "mining-status.json",
+  "FOLLOWERS_IDS_FILENAME": "-followersIDs.json",
+  "USER_LOOKUP_FILENAME": "-followers.csv"
+}

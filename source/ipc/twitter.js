@@ -4,19 +4,15 @@ const OAuth = require('oauth');
 const OauthTwitter = require('electron-oauth-twitter');
 const fs = require('fs');
 const csv = require('fast-csv');
+const constants = require('../constants');
 
 const LOG_IN = 'LOG_IN';
 const VERIFY_CREDENTIALS = 'VERIFY_CREDENTIALS';
 const GET_FOLLOWERS = 'GET_FOLLOWERS';
 const USER_LOOK_UP = 'USER_LOOK_UP';
 
-const FILES_PATH = './source/';
-const MINING_STATUS_FILENAME = FILES_PATH + 'mining-status.json';
-const FOLLOWERS_IDS_FILENAME = '-followersIDs.json';
-const USER_LOOKUP_FILENAME = '-followers.csv';
-
 let ouathRequest = function(url, ipcEvent, ipcKey, callback) {
-  fs.readFile(FILES_PATH + 'config.json', 'utf8', function(err, result) {
+  fs.readFile(constants.FILES_PATH + 'config.json', 'utf8', function(err, result) {
     let config = JSON.parse(result);
 
     const oauth = new OAuth.OAuth(
@@ -53,7 +49,7 @@ let ouathRequest = function(url, ipcEvent, ipcKey, callback) {
 };
 
 ipc.on(LOG_IN, function(ipcEvent, data) {
-  fs.readFile(FILES_PATH + 'config.json', 'utf8', function(err, result) {
+  fs.readFile(constants.FILES_PATH + 'config.json', 'utf8', function(err, result) {
     let config = JSON.parse(result);
 
     let twitter = new OauthTwitter({
@@ -65,7 +61,7 @@ ipc.on(LOG_IN, function(ipcEvent, data) {
       config.accessToken = result.oauth_access_token;
       config.accessTokenSecret = result.oauth_access_token_secret;
 
-      fs.writeFile(FILES_PATH + 'config.json', JSON.stringify(config), 'utf8', function (err) {
+      fs.writeFile(constants.FILES_PATH + 'config.json', JSON.stringify(config), 'utf8', function (err) {
         if (err) {
           dialog.showErrorBox(err);
         }
@@ -80,7 +76,7 @@ ipc.on(LOG_IN, function(ipcEvent, data) {
 });
 
 ipc.on(VERIFY_CREDENTIALS, function(ipcEvent, data) {
-  fs.readFile(FILES_PATH + 'config.json', 'utf8', function(err, result) {
+  fs.readFile(constants.FILES_PATH + 'config.json', 'utf8', function(err, result) {
     let config = JSON.parse(result);
 
     if(config.accessToken === "" || config.accessTokenSecret === "") {
@@ -96,14 +92,14 @@ ipc.on(GET_FOLLOWERS, function(ipcEvent, d) {
   let data = {screenName: d.screenName, followersCursor: d.cursor, lookupPage: 0};
 
   // Save current followerCursor and clear lookupPage
-  fs.writeFile(MINING_STATUS_FILENAME, JSON.stringify(data), 'utf8', function (err) {
+  fs.writeFile(constants.FILES_PATH + constants.MINING_STATUS_FILENAME, JSON.stringify(data), 'utf8', function (err) {
     if (err) {
       console.log(err);
     } else {
       // Get next followers IDs
       let url = 'https://api.twitter.com/1.1/followers/ids.json?screen_name=' + d.screenName + '&cursor=' + d.cursor + '&count=' + d.count;
       ouathRequest(url, ipcEvent, GET_FOLLOWERS, function(result) {
-        let followersFileName = FILES_PATH + d.screenName + FOLLOWERS_IDS_FILENAME;
+        let followersFileName = constants.FILES_PATH + d.screenName + constants.FOLLOWERS_IDS_FILENAME;
 
         // Read already saved followers file in order to updated them later
         fs.readFile(followersFileName, 'utf8', function(err, content) {
@@ -132,12 +128,8 @@ ipc.on(USER_LOOK_UP, function(ipcEvent, d) {
   if(d.page !== undefined && d.userIDs !== undefined) {
     let data = {screenName: d.screenName, followersCursor: null, lookupPage: d.page};
 
-    if(d.page === 0) {
-      fs.unlinkSync(FILES_PATH + d.screenName + FOLLOWERS_IDS_FILENAME);
-    }
-
     // Save current lookupPage and clear followersCursor
-    fs.writeFile(MINING_STATUS_FILENAME, JSON.stringify(data), 'utf8', function (err) {
+    fs.writeFile(constants.FILES_PATH + constants.MINING_STATUS_FILENAME, JSON.stringify(data), 'utf8', function (err) {
       if (err) {
         console.log(err);
       }
@@ -152,7 +144,7 @@ ipc.on(USER_LOOK_UP, function(ipcEvent, d) {
           follower.name = follower.name.replace(/"/g, '');
 
           let CSVLine = follower.name + ',' + follower.screen_name + ',' + url + '\n';
-          fs.appendFile(FILES_PATH + d.screenName + USER_LOOKUP_FILENAME, CSVLine, function (err) {
+          fs.appendFile(constants.FILES_PATH + d.screenName + constants.USER_LOOKUP_FILENAME, CSVLine, function (err) {
             if (err) throw err;
           });
         });

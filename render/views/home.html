@@ -24,7 +24,7 @@
   <div class="row margin-lg">
     <div class="col-lg-12">
       <div class="input-group">
-        <input type="text" class="form-control" placeholder="Enter user name" ng-model="$ctrl.screenName">
+        <input type="text" class="form-control" placeholder="User name" ng-model="$ctrl.screenName">
         <span class="input-group-btn">
           <button ng-click="$ctrl.run()" ng-disabled="$ctrl.searchEnabled === false" class="btn btn-labeled btn-primary">
             <span class="btn-label"><i class="fa fa-search"></i>
@@ -36,6 +36,7 @@
   </div>
   <div class="row margin-lg">
     <div class="col-lg-12">
+      <p>import from file</p>
       <button ng-click="$ctrl.newFileImport()" ng-disabled="$ctrl.searchEnabled === false" class="btn btn-labeled btn-primary">
         <span class="btn-label"><i class="fa fa-file"></i>
         </span>Browse

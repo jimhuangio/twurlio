@@ -1,3 +1,4 @@
 node_modules
 out
-source/config.json
+config.json
+mining-status.json

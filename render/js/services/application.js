@@ -40,8 +40,8 @@ angular.module('twitterminer').service('applicationService', ['$q',
     });
 
     return {
-      doneMining: function() {
-        ipc.send(doneMining);
+      doneMining: function(screenName) {
+        ipc.send(doneMining, {screenName: screenName});
         promise = $q.defer();
         return promise.promise;
       },
