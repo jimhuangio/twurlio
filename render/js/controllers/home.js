@@ -68,53 +68,48 @@ angular.module('twitterminer').controller('HomeCtrl', function ($scope, $timeout
                             twitterService.userLookup({screenName: vm.screenName}).then(
                               function(user) {
                                 vm.userIDs = data.userIDs;
+                                vm.targetUser = user[0];
+
+                                vm.followersIDsReceived = data.userIDs.length;
+
+                                currentUserDetailsPage = (data.status.lookupPage === null) ? 0 : data.status.lookupPage;
 
                                 if(data.status.followersCursor !== null) {
                                   vm.status = 'Getting followers IDs ..';
-                                  // rateExceeded = checkRateLimit(user, vm.run);
-                                  // if(rateExceeded === false) {
-                                  vm.targetUser = user[0];
-                                  vm.requestsCount = data.userIDs.length/FOLLOWERS_IDS_PAGE_SIZE;
-                                  vm.totalRequests = Math.ceil(vm.targetUser.followers_count/FOLLOWERS_IDS_PAGE_SIZE);
-                                  vm.progressBarRightText = vm.targetUser.followers_count;
-
-                                  vm.followersIDsRequested = data.userIDs.length;
-                                  vm.followersIDsReceived = data.userIDs.length;
-                                  vm.followersIDsDiscarded = vm.followersIDsRequested-vm.followersIDsReceived;
 
                                   followersCursor = data.status.followersCursor;
 
+                                  vm.requestsCount = data.userIDs.length/FOLLOWERS_IDS_PAGE_SIZE;
+                                  vm.totalRequests = Math.ceil(vm.targetUser.followers_count/FOLLOWERS_IDS_PAGE_SIZE);
+
                                   vm.progressBarLeftText = data.userIDs.length;
+                                  vm.progressBarRightText = vm.targetUser.followers_count;
+
+                                  vm.followersIDsRequested = data.userIDs.length;
 
                                   getFollowers();
-                                  // }
                                 } else {
-                                  // if(data.status.lookupPage !== null)
                                   vm.status = 'Getting followers details ..';
-                                  // rateExceeded = checkRateLimit(user, userLookup);
-                                  // if(rateExceeded === false) {
-                                  vm.targetUser = user[0];
-
-                                  currentUserDetailsPage = (data.status.lookupPage === null) ? 0 : data.status.lookupPage;
-
-                                  vm.followersIDsRequested = vm.targetUser.followers_count;
-                                  vm.followersIDsReceived = data.userIDs.length;
-                                  vm.followersIDsDiscarded = vm.followersIDsRequested-vm.followersIDsReceived;
-
-                                  vm.followersDetailsRequested = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
-                                  vm.followersDetailsDiscarded = vm.followersDetailsRequested-data.userLookupData.length;
-                                  vm.followersDetailsReceived = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE - vm.followersDetailsRequested-data.userLookupData.length;
-
-                                  vm.progressBarLeftText = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
-                                  vm.progressBarRightText = vm.targetUser.followers_count;
 
                                   vm.requestsCount = currentUserDetailsPage;
                                   vm.totalRequests = Math.ceil(vm.targetUser.followers_count/FOLLOWERS_DETAILS_PAGE_SIZE);
 
+                                  vm.progressBarLeftText = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
+                                  vm.progressBarRightText = vm.targetUser.followers_count;
+
+
+                                  vm.followersIDsRequested = vm.targetUser.followers_count;
+
+                                  vm.followersDetailsRequested = currentUserDetailsPage*FOLLOWERS_DETAILS_PAGE_SIZE;
+                                  vm.followersDetailsReceived = data.userLookupData.length;
+                                  vm.followersDetailsDiscarded = vm.followersDetailsRequested-data.userLookupData.length;
+
                                   vm.followers = data.userLookupData;
 
-                                  userLookup(vm.followersDetailsRequested);
+                                  userLookup(0);
                                 }
+
+                                vm.followersIDsDiscarded = vm.followersIDsRequested-vm.followersIDsReceived;
 
                                 vm.loading = false;
                               }
