@@ -5,6 +5,7 @@ const OauthTwitter = require('electron-oauth-twitter');
 const fs = require('fs');
 const csv = require('fast-csv');
 const constants = require('../constants');
+const columns = require('../columns');
 
 const LOG_IN = 'LOG_IN';
 const VERIFY_CREDENTIALS = 'VERIFY_CREDENTIALS';
@@ -125,6 +126,48 @@ ipc.on(USER_LOOK_UP, function(ipcEvent, d) {
     ouathRequest(url, ipcEvent, USER_LOOK_UP, callback);
   }
 
+  function requestCallback(result) {
+    result.forEach(function(follower) {
+      let CSVLine = '';
+
+      follower.name = follower.name.replace(/"/g, '');
+
+      columns.forEach(function(column, index) {
+        CSVLine += '\"' + follower[column.key] + '\"';
+
+        if(index !== columns.length-1) {
+          CSVLine += ',';
+        } else {
+          if(follower.entities && follower.entities.url) {
+            CSVLine += ',' + follower.entities.url.urls["0"].expanded_url;
+          }
+
+          CSVLine += '\n';
+        }
+      });
+
+      fs.appendFile(constants.FILES_PATH + d.screenName + constants.USER_LOOKUP_FILENAME, CSVLine, function (err) {
+        if (err) throw err;
+      });
+    });
+  }
+
+  function createHeader(callback) {
+    let CSVHeaderLine = '';
+
+    columns.forEach(function(column, index) {
+      CSVHeaderLine += '\"' + column.description + '\"';
+
+      if(index !== columns.length-1) {
+        CSVHeaderLine += ',';
+      } else {
+        CSVHeaderLine += ',\"URL\"\n';
+      }
+    });
+
+    fs.appendFile(constants.FILES_PATH + d.screenName + constants.USER_LOOKUP_FILENAME, CSVHeaderLine, callback);
+  }
+
   if(d.page !== undefined && d.userIDs !== undefined) {
     let data = {screenName: d.screenName, followersCursor: null, lookupPage: d.page};
 
@@ -134,21 +177,13 @@ ipc.on(USER_LOOK_UP, function(ipcEvent, d) {
         console.log(err);
       }
 
-      sendRequest('user_id=' + d.userIDs, function(result) {
-        result.forEach(function(follower) {
-          let url = '';
-          if(follower.entities && follower.entities.url) {
-            url = follower.entities.url.urls["0"].expanded_url;
-          }
-
-          follower.name = follower.name.replace(/"/g, '');
-
-          let CSVLine = follower.name + ',' + follower.screen_name + ',' + url + '\n';
-          fs.appendFile(constants.FILES_PATH + d.screenName + constants.USER_LOOKUP_FILENAME, CSVLine, function (err) {
-            if (err) throw err;
-          });
+      if(d.page === 0) {
+        createHeader(function() {
+          sendRequest('user_id=' + d.userIDs, requestCallback);
         });
-      });
+      } else {
+        sendRequest('user_id=' + d.userIDs, requestCallback);
+      }
     });
   } else if(d.screenName) {
     sendRequest('screen_name=' + d.screenName);
