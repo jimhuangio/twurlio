@@ -106,7 +106,7 @@ ipc.on(NEW_FILE_IMPORT, function(ipcEvent, d) {
         ipcEvent.sender.send(NEW_FILE_IMPORT, {errors: "Error reading file"});
       }
 
-      var array = data.toString().split('\n');
+      var array = data.toString().split(/\r\n?|\n/);
 
       ipcEvent.sender.send(NEW_FILE_IMPORT, {data: array});
     });
